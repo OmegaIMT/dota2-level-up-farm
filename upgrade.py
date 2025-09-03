@@ -6,13 +6,13 @@ from typing import Optional
 
 # Configurações
 CONFIDENCE_SKILL = 0.7  # Confiança para localizar skills
-CONFIDENCE_HERO = 0.86   # Confiança para localizar heróis
+CONFIDENCE_HERO = 0.7 # Confiança para localizar heróis
 DELAY_ENTRE = 0.1
 DELAY_APOS = 0.8
 
 # Diretórios
-DIR_SKILL = r"imagens\\summon_skill"
-DIR_HERO = r"imagens\\summon_hero"
+DIR_SKILL = r"imagens\\skill_game"
+DIR_HERO = r"imagens\\heros_game"
 IMG_CONFIRM = r"imagens\\buttons\\skill_confirm.png"
 
 # Posições de clique
@@ -33,7 +33,7 @@ def _locate_center(path: str, confidence: float) -> Optional[pg.Point]:
 
 def _after_click_move():
     try:
-        pg.moveTo(1284, 1052)
+        pg.moveTo(1312, 1053)
     except Exception:
         pass
 
