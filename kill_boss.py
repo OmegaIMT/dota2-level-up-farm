@@ -6,6 +6,7 @@ import threading
 from typing import Optional, Callable
 import pyautogui as pg
 import upgrade
+import config
 
 # Imagens
 IMG_SUBIR_NIVEL = r"imagens\\buttons\\subir_nivel.png"
@@ -38,64 +39,44 @@ CLICKS_POS_HEROI = [
     ("right", 1236, 1022),
 ]
 BAG_ITEMS = [
-    (1314, 960),  # index 0
-    (1314, 960),  # index 1
-    (1375, 960),  # index 2
-    (1251, 1009), # index 3
-    (1313, 1009), # index 4
-    (1382, 1009)  # index 5
+    (1314, 960), (1314, 960), (1375, 960),
+    (1251, 1009), (1313, 1009), (1382, 1009)
 ]
 POS_ORGANIZAR = (1657, 974)
-
 
 # ===== STATUS =====
 def _status(msg: str):
     if ON_STATUS:
-        try:
-            ON_STATUS(status=msg)
-        except Exception:
-            pass
-
+        try: ON_STATUS(status=msg)
+        except: pass
 
 def _etapa():
     if ON_STATUS:
-        try:
-            ON_STATUS(etapa="kill_boss.py")
-        except Exception:
-            pass
-
+        try: ON_STATUS(etapa="kill_boss.py")
+        except: pass
 
 def _atualizar_bag_index(index: int):
     if ON_STATUS:
-        try:
-            ON_STATUS(bag=index)
-        except Exception:
-            pass
-
+        try: ON_STATUS(bag=index)
+        except: pass
 
 # ===== CLIQUES =====
 def _locate_center(path: str):
-    try:
-        return pg.locateCenterOnScreen(path, confidence=CONFIDENCE)
-    except Exception:
-        return None
-
+    if config.seta or config.encerrar: raise InterruptedError
+    try: return pg.locateCenterOnScreen(path, confidence=CONFIDENCE)
+    except: return None
 
 def _image_exists(path: str) -> bool:
-    try:
-        return pg.locateOnScreen(path, confidence=CONFIDENCE) is not None
-    except Exception:
-        return False
-
+    if config.seta or config.encerrar: return False
+    try: return pg.locateOnScreen(path, confidence=CONFIDENCE) is not None
+    except: return False
 
 def _after_click_move():
-    try:
-        pg.moveTo(1312, 1053)
-    except Exception:
-        pass
-
+    try: pg.moveTo(1312, 1053)
+    except: pass
 
 def _click_point(x: int, y: int, button="left", delay: float = 0.1):
+    if config.seta or config.encerrar: raise InterruptedError
     try:
         pg.moveTo(x, y)
         time.sleep(0.1)
@@ -103,18 +84,14 @@ def _click_point(x: int, y: int, button="left", delay: float = 0.1):
         if abs(atual.x - x) <= 5 and abs(atual.y - y) <= 5:
             pg.click(button=button)
         else:
-            _status(
-                f"⚠️ Posição incorreta antes do clique: atual={atual}, esperado=({x},{y})"
-            )
+            _status(f"⚠️ Posição incorreta: atual={atual}, esperado=({x},{y})")
         time.sleep(delay)
     finally:
         _after_click_move()
 
-
 def _click_center(button="left", delay: float = 0.1):
     sw, sh = pg.size()
     _click_point(sw // 2, sh // 2, button=button, delay=delay)
-
 
 def _click_image(path: str, button="left", delay: float = 0.1) -> bool:
     pos = _locate_center(path)
@@ -123,8 +100,8 @@ def _click_image(path: str, button="left", delay: float = 0.1) -> bool:
         return True
     return False
 
-
 def usar_item_bag(index: int) -> int:
+    if config.seta or config.encerrar: raise InterruptedError
     if index >= len(BAG_ITEMS):
         _status("⚠️ Bag Cheia")
         return index
@@ -132,16 +109,13 @@ def usar_item_bag(index: int) -> int:
     item_pos = BAG_ITEMS[index]
     _status(f"Usando Item {index + 1}: {item_pos}")
 
-    # Clique duplo no slot da bag
     for _ in range(2):
         _click_point(*item_pos, delay=0.1)
     time.sleep(0.5)
 
-    # Organiza os itens
     _click_point(*POS_ORGANIZAR, delay=0.3)
     time.sleep(0.5)
 
-    # Arrasta da posição fixa para o slot da bag
     pg.moveTo(1640, 627)
     time.sleep(0.5)
     pg.mouseDown()
@@ -156,13 +130,13 @@ def usar_item_bag(index: int) -> int:
     _atualizar_bag_index(index)
     return index
 
-
 # ===== WATCHERS =====
 def _lvlup_watcher(stop_evt: threading.Event):
     _status("observando subir_nivel")
     estava_visivel = False
 
     while not stop_evt.is_set():
+        if config.seta or config.encerrar: break
         visivel = _locate_center(IMG_SUBIR_NIVEL) is not None
         if visivel and not estava_visivel:
             _status("Herói upado — pausando fluxo do boss")
@@ -176,12 +150,22 @@ def _lvlup_watcher(stop_evt: threading.Event):
         estava_visivel = visivel
         time.sleep(POLL_LVLUP)
 
+def _verificar_interrupcao_periodica(stop_evt: threading.Event):
+    while not stop_evt.is_set():
+        for _ in range(190):
+            if stop_evt.is_set(): return
+            time.sleep(1)
+        if config.seta or config.encerrar:
+            _status("Interrupção solicitada — encerrando kill_boss")
+            stop_evt.set()
+            raise InterruptedError("Interrompido por monitor_seta")
 
 def _boss_watcher(stop_evt: threading.Event, index: int) -> int:
-    _status("Aguardadno Boss")
+    _status("Aguardando Boss")
     estava_visivel = False
 
     while not stop_evt.is_set():
+        if config.seta or config.encerrar: break
         PAUSA_KILL_BOSS.wait()
         if PAUSA_TEMPORARIA_BOSS.is_set():
             _status("Upando Heroi")
@@ -199,17 +183,16 @@ def _boss_watcher(stop_evt: threading.Event, index: int) -> int:
             try:
                 pg.press("f3")
                 _click_center(button="right")
-            except Exception:
-                pass
+            except: pass
 
         if not visivel and estava_visivel:
-            _status("Evoncando Boss")
+            _status("Evoluindo Boss")
             try:
                 pg.press("f3")
                 _click_center(button="right")
 
                 if PAUSA_TEMPORARIA_BOSS.is_set():
-                    _status("⏸️ Pausa temporária detectada — aguardando upgrade")
+                    _status("⏸️ Pausa temporária — aguardando upgrade")
                     PAUSA_TEMPORARIA_BOSS.wait()
 
                 _status("Upando Atributos")
@@ -230,7 +213,7 @@ def _boss_watcher(stop_evt: threading.Event, index: int) -> int:
 
     return index
 
-
+# ===== EXECUÇÃO PRINCIPAL =====
 def executar(on_status: Optional[Callable[..., None]] = None) -> tuple[bool, int]:
     global ON_STATUS
     ON_STATUS = on_status
@@ -239,6 +222,10 @@ def executar(on_status: Optional[Callable[..., None]] = None) -> tuple[bool, int
     bag_index = 0
 
     try:
+        if config.seta or config.encerrar:
+            _status("Interrompido antes de iniciar (seta ou encerrar)")
+            return False, bag_index
+
         _status("adiantando boss inicial")
         pg.press("f3")
         _click_center(button="right")
@@ -251,6 +238,8 @@ def executar(on_status: Optional[Callable[..., None]] = None) -> tuple[bool, int
 
         stop_evt = threading.Event()
         threading.Thread(target=_lvlup_watcher, args=(stop_evt,), daemon=True).start()
+        threading.Thread(target=_verificar_interrupcao_periodica, args=(stop_evt,), daemon=True).start()
+
         PAUSA_KILL_BOSS.set()
         bag_index = _boss_watcher(stop_evt, bag_index)
         stop_evt.set()
@@ -260,6 +249,10 @@ def executar(on_status: Optional[Callable[..., None]] = None) -> tuple[bool, int
 
     except pg.FailSafeException:
         _status("interrompido (failsafe)")
+        return False, bag_index
+
+    except InterruptedError:
+        _status("interrompido (monitor_seta)")
         return False, bag_index
 
     except Exception as e:

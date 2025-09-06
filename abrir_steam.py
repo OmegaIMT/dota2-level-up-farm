@@ -83,9 +83,18 @@ def executar(on_status=None):
     time.sleep(2)
 
     # 4. Espera Steam carregar (steam_carregada.png)
-    pos_carregada = esperar_imagem("steam_carregada.png", timeout=60)
+    pos_carregada = esperar_imagem("steam_carregada.png", timeout=30)
     if not pos_carregada:
-        print("Não encontrou steam_carregada.png")
+        # tenta "amizades.png"
+        pos_amizades = esperar_imagem("amizades.png", timeout=15)
+        if pos_amizades:
+            clicar_centro(pos_amizades)
+            time.sleep(2)
+            # tenta de novo steam_carregada
+            pos_carregada = esperar_imagem("steam_carregada.png", timeout=30)
+
+    if not pos_carregada:
+        print("Não encontrou steam_carregada.png nem amizades.png")
         return False
 
     # 5. Clica no botão "Ficar Off" (extremo direito)

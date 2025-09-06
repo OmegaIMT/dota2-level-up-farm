@@ -51,7 +51,9 @@ def criar_painel():
             f"Ciclo: {config.ciclo} de {config.ciclo_max or '∞'}\n"
             f"Bag Index = {config.bag_index}\n"
             f"Hero Level = {config.level_heroi}\n"
-            f"Status = {config.status_msg or '---'}"
+            f"Status = {config.status_msg or '---'}\n"
+            f"seta = {config.teste or '---'}\n"
+            
         )
         label.config(text=texto)
         root.after(200, atualizar)

@@ -3,8 +3,10 @@
 
 import time
 import os
+import threading
 import pyautogui as pg
 from typing import Optional, Callable
+import config  # para acessar config.seta e config.encerrar
 
 pg.FAILSAFE = True
 pg.PAUSE = 0.05
@@ -15,6 +17,19 @@ DIR_HERO    = r"imagens\\heros_game"
 CONFIDENCE = 0.7
 
 ON_STATUS: Optional[Callable[..., None]] = None
+
+# ===== Verificador de interrupção =====
+def _verificar_interrupcao_periodica(stop_evt: threading.Event):
+    while not stop_evt.is_set():
+        for _ in range(190):
+            if stop_evt.is_set():
+                return
+            time.sleep(1)
+        if config.seta or config.encerrar:
+            if ON_STATUS:
+                ON_STATUS(status="Interrupção solicitada — encerrando farm")
+            stop_evt.set()
+            raise InterruptedError("Interrompido por monitor_seta")
 
 # ===== Funções auxiliares =====
 def set_status(status: str):
@@ -48,8 +63,12 @@ def _listar_hero_paths():
             yield caminho
 
 def escolher_heroi():
+    if config.seta or config.encerrar:
+        return False
     clicou = False
     for path in _listar_hero_paths():
+        if config.seta or config.encerrar:
+            return False
         set_status(f"{os.path.basename(path)}")
         pos = _locate_center(path)
         if pos:
@@ -66,6 +85,9 @@ def escolher_heroi():
 # ===== Refresh =====
 def procurar_refresh_loop(poll: float = 0.5) -> bool:
     while True:
+        if config.seta or config.encerrar:
+            return False
+
         if os.path.isfile(IMG_REFRESH):
             try:
                 pos = pg.locateCenterOnScreen(IMG_REFRESH, confidence=0.7)
@@ -89,6 +111,8 @@ def procurar_refresh_loop(poll: float = 0.5) -> bool:
 
 # ===== Arrastar Itens =====
 def arrastar_itens():
+    if config.seta or config.encerrar:
+        return
     set_status("Arrastando Itens")
     pg.moveTo(1646, 630)
     pg.mouseDown()
@@ -98,6 +122,8 @@ def arrastar_itens():
     pg.mouseUp()
     time.sleep(0.5)
 
+    if config.seta or config.encerrar:
+        return
     pg.moveTo(1727, 630)
     pg.mouseDown()
     time.sleep(0.5)
@@ -111,35 +137,60 @@ def executar(on_status: Optional[Callable[..., None]] = None) -> bool:
     global ON_STATUS
     ON_STATUS = on_status
 
-    set_status("Farmando")
-    time.sleep(1)
+    stop_evt = threading.Event()
+    threading.Thread(target=_verificar_interrupcao_periodica, args=(stop_evt,), daemon=True).start()
 
-    set_status("Automatizando ouro e xp")
-    ouro_xp_clicks = [(1301, 912), (1235, 911)]
-    for x, y in ouro_xp_clicks:
-        clicar("right", x, y)
+    try:
+        if config.seta or config.encerrar:
+            return False
+
+        set_status("Farmando")
         time.sleep(1)
 
-    set_status("Upando Atributos")
-    atributos_clicks = [
-        ("left", 1723, 1050),
-        *[("left", 1079, 1039)] * 8,
-        ("right", 1094, 936)
-    ]
-    for tipo, x, y in atributos_clicks:
-        clicar(tipo, x, y)
+        if config.seta or config.encerrar:
+            return False
+        set_status("Automatizando ouro e xp")
+        ouro_xp_clicks = [(1301, 912), (1235, 911)]
+        for x, y in ouro_xp_clicks:
+            if config.seta or config.encerrar:
+                return False
+            clicar("right", x, y)
+            time.sleep(1)
+
+        if config.seta or config.encerrar:
+            return False
+        set_status("Upando Atributos")
+        atributos_clicks = [
+            ("left", 1723, 1050),
+            *[("left", 1079, 1039)] * 8,
+            ("right", 1094, 936)
+        ]
+        for tipo, x, y in atributos_clicks:
+            if config.seta or config.encerrar:
+                return False
+            clicar(tipo, x, y)
+            time.sleep(1)
+
+        arrastar_itens()
+
+        if config.seta or config.encerrar:
+            return False
+        set_status("Indo para o centro")
+        pg.press("f3")
         time.sleep(1)
+        clicar_centro(button="right")
+        time.sleep(1)
+        pg.moveTo(1284, 1052)
 
-    arrastar_itens()
+        return procurar_refresh_loop()
 
-    set_status("Indo para o centro")
-    pg.press("f3")
-    time.sleep(1)
-    clicar_centro(button="right")
-    time.sleep(1)
-    pg.moveTo(1284, 1052)
+    except InterruptedError:
+        set_status("Interrompido por monitor_seta")
+        return False
 
-    return procurar_refresh_loop()
+    except Exception as e:
+        set_status(f"Erro: {type(e).__name__}")
+        return False
 
 if __name__ == "__main__":
     executar(lambda status: print(f"[STATUS] {status}"))

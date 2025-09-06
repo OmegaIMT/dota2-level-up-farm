@@ -17,7 +17,8 @@ pill = False  # True = usar pílula
 etapa_atual = ""  # Etapa atual do fluxo
 steam_exe = r"C:\Program Files (x86)\Steam\Steam.exe" # Caminho do executável da Steam# config.py
 auto_ataque = "k"
-mapa = "05"
+mapa = "009"
+teste = ""
 
 # ======= Diretórios de imagens =======
 BUTTONS = r"imagens\\buttons\\"
@@ -28,6 +29,7 @@ SUMMON_HERO = r"imagens\\heros_game\\"
 TESOUROS = r"imagens\\tesouro\\"
 INICIAR_JOGO = r"imagens\\dota\\"
 ESCOLHER_MAPA = f"imagens\\dota\\mapa\\{mapa}.png"
+REINICIAR = r"imagens\\buttons\\setas"
 
 # ======= Posição da moeda de ouro =======
 ouro = (1722, 1048)
