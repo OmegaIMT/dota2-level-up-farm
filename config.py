@@ -17,7 +17,7 @@ pill = False  # True = usar pílula
 etapa_atual = ""  # Etapa atual do fluxo
 steam_exe = r"C:\Program Files (x86)\Steam\Steam.exe" # Caminho do executável da Steam# config.py
 auto_ataque = "k"
-mapa = "009"
+mapa = "012"
 teste = ""
 
 # ======= Diretórios de imagens =======

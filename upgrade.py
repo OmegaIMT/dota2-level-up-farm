@@ -6,7 +6,7 @@ from typing import Optional
 
 # Configurações
 CONFIDENCE_SKILL = 0.7  # Confiança para localizar skills
-CONFIDENCE_HERO = 0.7 # Confiança para localizar heróis
+CONFIDENCE_HERO = 0.86 # Confiança para localizar heróis
 DELAY_ENTRE = 0.1
 DELAY_APOS = 0.8
 
@@ -35,6 +35,7 @@ def _after_click_move():
     try:
         pg.moveTo(1312, 1053)
     except Exception:
+
         pass
 
 def _click_point(x: int, y: int, button="left", delay: float = 0.1):
@@ -63,50 +64,14 @@ def upgrade_personagem(on_status=None, origem="desconhecido", resume_event: Opti
 
     try:
         # Escolher skill
-        arquivos_skill = sorted(f for f in os.listdir(DIR_SKILL) if f.lower().endswith(".png"))
-        if on_status:
-            on_status(f"{len(arquivos_skill)} skills disponíveis")
-
-        for nome in arquivos_skill:
-            caminho = os.path.join(DIR_SKILL, nome)
-            if on_status:
-                on_status(f"🔍skill: {nome}")
-            pos = _locate_center(caminho, confidence=CONFIDENCE_SKILL)
-            if pos:
-                on_status(f"✅ Skill encontrada em {pos} — clicando")
-                _click_point(pos.x, pos.y, delay=DELAY_APOS)
-                time.sleep(DELAY_APOS)
-                _click_image(IMG_CONFIRM, confidence=CONFIDENCE_SKILL)
-                break
-        else:
-            if on_status:
-                on_status("⚠️ Skill não localizada — confirmando manualmente")
-            _click_image(IMG_CONFIRM, confidence=CONFIDENCE_SKILL)
-            time.sleep(DELAY_APOS)
-            _after_click_move()
+        _click_image(IMG_CONFIRM, confidence=CONFIDENCE_SKILL)
+        time.sleep(DELAY_APOS)
+        _after_click_move()
 
         time.sleep(1)
 
         # Escolher herói
-        arquivos_heroi = sorted(os.listdir(DIR_HERO))
-        clicou_heroi = False
-        for nome in arquivos_heroi:
-            caminho = os.path.join(DIR_HERO, nome)
-            if os.path.isfile(caminho):
-                if on_status:
-                    on_status(f"🔍herói: {nome}")
-                pos = _locate_center(caminho, confidence=CONFIDENCE_HERO)
-                if pos:
-                    on_status(f"✅ Herói encontrado em {pos} — clicando")
-                    _click_point(pos.x, pos.y, delay=DELAY_APOS)
-                    clicou_heroi = True
-                    break
-                time.sleep(DELAY_ENTRE)
-
-        if not clicou_heroi:
-            if on_status:
-                on_status("⚠️ Nenhum herói compatível — clicando centro")
-            _click_center()
+        _click_center()
 
         # Atributos pós-herói
         if on_status:

@@ -12,6 +12,7 @@ import config
 IMG_SUBIR_NIVEL = r"imagens\\buttons\\subir_nivel.png"
 IMG_BOSS_ICON = r"imagens\\boss\\boss.png"
 IMG_FIM_GAME = r"imagens\\buttons\\fim_game.png"
+CONF_BOSS = r"imagens\\buttons\\confirm_boss.png"
 
 # Configurações
 CONFIDENCE = 0.7
@@ -190,19 +191,19 @@ def _boss_watcher(stop_evt: threading.Event, index: int) -> int:
             try:
                 pg.press("f3")
                 _click_center(button="right")
-
                 if PAUSA_TEMPORARIA_BOSS.is_set():
                     _status("⏸️ Pausa temporária — aguardando upgrade")
                     PAUSA_TEMPORARIA_BOSS.wait()
-
                 _status("Upando Atributos")
                 for tipo, x, y in CLICKS_POS_HEROI:
                     _click_point(x, y, button=tipo, delay=0.5)
                 time.sleep(0.5)
-                for _ in range(3):
+                for _ in range(9):  # no máximo 9 repetições
                     _click_point(1539, 482, button="left", delay=0.5)
-                time.sleep(0.5)
-                _click_point(*POS_CONFIRMAR_BOSS, delay=0.2)
+                    time.sleep(0.5)
+                    if _click_image(CONF_BOSS, delay=0.2):
+                        break
+
                 index = usar_item_bag(index)
             except Exception as e:
                 _status(f"Erro ao adiantar boss: {e}")

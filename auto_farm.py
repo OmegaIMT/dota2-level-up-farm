@@ -74,6 +74,7 @@ def monitor_seta():
             config.teste = f"Buscando seta... {segundos}s restantes"
 
             try:
+                
                 pos = pyautogui.locateOnScreen(caminho_seta, confidence=0.6)
             except:
                 pos = None
