@@ -6,7 +6,7 @@ bag_index = 0
 level_heroi = 0
 status_msg = ""
 encerrar = False
-ciclo_max = 0  # 0 para ciclos infinitos
+ciclo_max = 0
 prioridade = 1  # 1 - farm de prata, 2 - farm de essência
 essencia_time = 300  # tempo em segundos para farmar essência
 seta = False  # usado para reiniciar o Script
@@ -17,8 +17,7 @@ pill = False  # True = usar pílula
 etapa_atual = ""  # Etapa atual do fluxo
 steam_exe = r"C:\Program Files (x86)\Steam\Steam.exe" # Caminho do executável da Steam# config.py
 auto_ataque = "k"
-mapa = "012"
-teste = ""
+mapa = "016"
 
 # ======= Diretórios de imagens =======
 BUTTONS = r"imagens\\buttons\\"
@@ -79,3 +78,4 @@ def get_bag_items():
 
 def get_descanso():
     return DESCANSO_N9_PLUS if mapa_config == 2 else DESCANSO_N1_N8
+speed_game = False

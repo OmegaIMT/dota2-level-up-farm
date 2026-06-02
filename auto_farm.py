@@ -9,42 +9,52 @@ import pyautogui
 import argparse
 
 import janela
+import iniciando_jogo  # <-- CORREÇÃO 1: Faltava importar o script novo!
 import farm_prata
 import kill_boss
 import fim_game
 import config
 import abrir_dota as dota
-import abrir_steam as steam
+
+# import abrir_steam as steam  # <-- Removido sem quebrar a estrutura
 import painel
+
 
 # ======= Atualiza status =======
 def update_status(etapa=None, bag=None, status=None, reset_bag=False):
-    if etapa: config.etapa_atual = etapa
-    if reset_bag: config.bag_index = 0
-    if bag is not None: config.bag_index = bag
-    if status: config.status_msg = status
+    if etapa:
+        config.etapa_atual = etapa
+    if reset_bag:
+        config.bag_index = 0
+    if bag is not None:
+        config.bag_index = bag
+    if status:
+        config.status_msg = status
     if config.ciclo_max > 0 and config.ciclo >= config.ciclo_max:
         config.status_msg = "Ciclo máximo. Saindo..."
         fechar(None)
 
+
 # ======= Verificações =======
 def is_dota_running():
-    for proc in psutil.process_iter(['name']):
+    for proc in psutil.process_iter(["name"]):
         try:
-            if proc.info['name'] and "dota2" in proc.info['name'].lower():
+            if proc.info["name"] and "dota2" in proc.info["name"].lower():
                 return True
         except:
             pass
     return False
 
+
 def is_steam_running():
-    for proc in psutil.process_iter(['name']):
+    for proc in psutil.process_iter(["name"]):
         try:
-            if proc.info['name'] and "steam" in proc.info['name'].lower():
+            if proc.info["name"] and "steam" in proc.info["name"].lower():
                 return True
         except:
             pass
     return False
+
 
 # ======= Monitor de seta =======
 def monitor_seta():
@@ -53,7 +63,7 @@ def monitor_seta():
 
     while not config.encerrar:
         for restante in range(180, 0, -1):
-            if config.encerrar: 
+            if config.encerrar:
                 return
             minutos = restante // 60
             segundos = restante % 60
@@ -74,7 +84,6 @@ def monitor_seta():
             config.teste = f"Buscando seta... {segundos}s restantes"
 
             try:
-                
                 pos = pyautogui.locateOnScreen(caminho_seta, confidence=0.6)
             except:
                 pos = None
@@ -88,7 +97,7 @@ def monitor_seta():
 
                 if pos_dog:
                     x, y = pyautogui.center(pos_dog)
-                    pyautogui.moveTo(x, y)                    
+                    pyautogui.moveTo(x, y)
                     time.sleep(0.05)
                     pyautogui.click(x, y)
                     config.teste = f"Clique em dog ({x}, {y})"
@@ -100,9 +109,10 @@ def monitor_seta():
         if not config.seta:
             config.teste = "Seta não encontrada"
 
+
 # ======= Fluxo principal =======
 def executar_fluxo(etapa_inicial="dota"):
-    etapas = ["dota", "janela", "farm", "kill_boss", "essencia", "fim_game"]
+    etapas = ["dota", "jogo", "janela", "farm", "kill_boss", "essencia", "fim_game"]
     if etapa_inicial not in etapas:
         etapa_inicial = "dota"
 
@@ -124,11 +134,6 @@ def executar_fluxo(etapa_inicial="dota"):
 
             etapa = etapas[i]
             if etapa == "dota":
-                if not is_steam_running():
-                    update_status("abrir_steam.py", status="Abrindo Steam")
-                    steam.executar(on_status=update_status)
-                    time.sleep(2.5)
-
                 if not is_dota_running():
                     update_status("abrir_dota.py", status="Abrindo Dota")
                     dota.executar(on_status=update_status)
@@ -137,6 +142,11 @@ def executar_fluxo(etapa_inicial="dota"):
                     update_status("abrir_dota.py", status="Dota já aberto")
                     time.sleep(1)
 
+            elif etapa == "jogo":
+                update_status("iniciando_jogo.py", status="Iniciando Jogo")
+                iniciando_jogo.executar(on_status=update_status)
+                time.sleep(2.5)
+                
             elif etapa == "janela":
                 update_status("janela.py", status="Focando janela")
                 janela.executar(on_status=update_status)
@@ -157,6 +167,7 @@ def executar_fluxo(etapa_inicial="dota"):
                 update_status("essencia.py", status="Farmando essência")
                 try:
                     import essencia
+
                     essencia.executar(on_status=update_status)
                     update_status("essencia.py", status="Essência ok")
                 except:
@@ -175,27 +186,33 @@ def executar_fluxo(etapa_inicial="dota"):
         update_status(status="Novo ciclo")
         etapa_inicial = "dota"
 
+
 # ======= Inicialização =======
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--etapa", choices=["dota", "janela", "farm", "kill_boss", "essencia", "fim_game"],
-                        help="Define a etapa inicial do fluxo")
+    parser.add_argument(
+        "--etapa",
+        choices=["dota", "jogo", "janela", "farm", "kill_boss", "essencia", "fim_game"],
+        help="Define a etapa inicial do fluxo",
+    )
     args = parser.parse_args()
 
     etapa_inicial = args.etapa if args.etapa else "dota"
 
     config.seta = False  # inicia limpo
     app = painel.criar_painel()
-    keyboard.add_hotkey('esc', lambda: fechar(app))
+    keyboard.add_hotkey("esc", lambda: fechar(app))
     threading.Thread(target=monitor_seta, daemon=True).start()
     threading.Thread(target=executar_fluxo, args=(etapa_inicial,), daemon=True).start()
     app.mainloop()
 
+
 def fechar(app):
     config.encerrar = True
-    if app: 
+    if app:
         app.destroy()
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
